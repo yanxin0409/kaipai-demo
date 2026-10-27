@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>开拍 · AI 视频体验版</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --card: #1a1d24;
+      --border: #2a2e38;
+      --text: #e6e8ee;
+      --muted: #8b91a0;
+      --accent: #4f7cff;
+      --accent-2: #22c55e;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px;
+    }
+    .wrap { width: 100%; max-width: 640px; }
+    header { text-align: center; margin-bottom: 28px; }
+    header h1 { font-size: 26px; font-weight: 700; letter-spacing: 1px; }
+    header h1 span { color: var(--accent); }
+    header p { color: var(--muted); font-size: 14px; margin-top: 8px; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px;
+      margin-bottom: 18px;
+    }
+    .card h2 { font-size: 15px; font-weight: 600; margin-bottom: 14px; color: var(--text); }
+    label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+    input[type="text"], textarea, select {
+      width: 100%;
+      background: #0f1115;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 11px 12px;
+      font-size: 14px;
+      font-family: inherit;
+      margin-bottom: 14px;
+      outline: none;
+    }
+    input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+    textarea { resize: vertical; min-height: 80px; }
+    .row { display: flex; gap: 12px; }
+    .row > div { flex: 1; }
+    button.primary {
+      width: 100%;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 13px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    button.primary:hover { opacity: .88; }
+    button.primary:disabled { opacity: .5; cursor: not-allowed; }
+
+    .status { font-size: 13px; color: var(--muted); margin-top: 12px; min-height: 20px; text-align: center; }
+    .status.err { color: var(--danger); }
+    .status.ok { color: var(--accent-2); }
+
+    .result { display: none; }
+    .result video { width: 100%; border-radius: 10px; background: #000; }
+    .meta { font-size: 12px; color: var(--muted); margin-top: 10px; text-align: center; }
+
+    .upsell {
+      text-align: center;
+      background: linear-gradient(135deg, #1a1d24, #222736);
+      border: 1px solid var(--accent);
+    }
+    .upsell h3 { font-size: 16px; margin-bottom: 8px; }
+    .upsell p { color: var(--muted); font-size: 13px; line-height: 1.7; }
+    .upsell a {
+      display: inline-block;
+      margin-top: 14px;
+      color: var(--accent);
+      font-weight: 600;
+      text-decoration: none;
+      border: 1px solid var(--accent);
+      padding: 9px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .upsell a:hover { background: var(--accent); color: #fff; }
+    .hint { font-size: 11px; color: #555b68; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>开拍 <span>AI 视频体验版</span></h1>
+      <p>填一句提示词，H3 模型即刻出片 —— 免费体验，算力由 AutoDL.Art 平台提供</p>
+    </header>
+
+    <div class="card">
+      <h2>① 你的 ComfyUI Token</h2>
+      <input type="text" id="token" placeholder="粘贴你的 token（在 autodl.art → 令牌管理 → 创建 ComfyUI 分组令牌）" />
+      <div class="hint">费用按次计（480p 约 ¥0.2），从你自己的账号扣，本应用不垫资。没有 token？<a href="https://autodl.art/large-model/tokens" target="_blank" style="color:var(--accent)">点此创建</a></div>
+    </div>
+
+    <div class="card">
+      <h2>② 描述你想生成的视频</h2>
+      <textarea id="prompt" placeholder="例：一只小猫在云端漫步，阳光温暖，镜头缓缓推进"></textarea>
+      <div class="row">
+        <div>
+          <label>时长</label>
+          <select id="duration">
+            <option value="3">3 秒</option>
+            <option value="5" selected>5 秒</option>
+            <option value="8">8 秒</option>
+            <option value="12">12 秒</option>
+            <option value="15">15 秒</option>
+          </select>
+        </div>
+        <div>
+          <label>分辨率</label>
+          <select id="resolution">
+            <option value="480p竖" selected>480p 竖屏</option>
+            <option value="480p横">480p 横屏</option>
+            <option value="768p竖">768p 竖屏</option>
+            <option value="768p横">768p 横屏</option>
+          </select>
+        </div>
+        <div>
+          <label>工作流</label>
+          <select id="workflow">
+            <option value="minimax_h3_lightx2v_no_pic">H3 文生视频</option>
+            <option value="minimax_h3_b99_001">H3 文生视频（基础）</option>
+          </select>
+        </div>
+      </div>
+      <button class="primary" id="generate" style="margin-top:6px">🎬 生成视频</button>
+      <div class="status" id="status"></div>
+    </div>
+
+    <div class="card result" id="resultCard">
+      <h2>③ 生成结果</h2>
+      <video id="video" controls playsinline></video>
+      <div class="meta" id="meta"></div>
+    </div>
+
+    <div class="card upsell">
+      <h3>想要高清 / 长视频 / 数字人直播？</h3>
+      <p>
+        体验版走的是平台 H3 标准通道。专业版支持 1080P 高清、15 秒+ 长视频、
+        数字人直播、AI 导演分镜编排，以及你自己的 API Key 与积分计费体系。
+      </p>
+      <a href="https://kaipai.gzhongde.cn" target="_blank">解锁专业版 →</a>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const statusEl = $('status');
+    const resultCard = $('resultCard');
+    const video = $('video');
+    const meta = $('meta');
+
+    function setStatus(msg, cls) {
+      statusEl.textContent = msg;
+      statusEl.className = 'status ' + (cls || '');
+    }
+
+    $('generate').addEventListener('click', async () => {
+      const token = $('token').value.trim();
+      const prompt = $('prompt').value.trim();
+      const duration = $('duration').value;
+      const resolution = $('resolution').value;
+      const workflow = $('workflow').value;
+
+      if (!token) { setStatus('请先填写你的 ComfyUI token', 'err'); return; }
+      if (!prompt) { setStatus('请填写视频提示词', 'err'); return; }
+
+      const btn = $('generate');
+      btn.disabled = true;
+      resultCard.style.display = 'none';
+      setStatus('提交任务中…');
+
+      try {
+        const r = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, prompt, duration, resolution, workflow_id: workflow }),
+        });
+        const d = await r.json();
+        if (d.error) { setStatus(d.error, 'err'); btn.disabled = false; return; }
+
+        const taskId = d.task_id;
+        setStatus('任务已提交，排队生成中（约 1-2 分钟）…');
+        await poll(taskId, token);
+      } catch (e) {
+        setStatus('请求失败：' + e.message, 'err');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    async function poll(taskId, token) {
+      for (let i = 0; i < 60; i++) {
+        await new Promise((r) => setTimeout(r, 5000));
+        try {
+          const r = await fetch(`/api/result?token=${encodeURIComponent(token)}&task_id=${taskId}`);
+          const d = await r.json();
+          if (d.status === 'SUCCESS' || d.status === 'completed') {
+            const v = (d.results || []).find((x) => x.type === 'video' || x.file_type === 'mp4');
+            if (v && v.url) {
+              video.src = v.url;
+              resultCard.style.display = 'block';
+              const cost = d.cost !== undefined ? ` · 扣费 ¥${d.cost}` : '';
+              meta.textContent = `耗时 ${d.duration ?? '—'} 秒${cost}`;
+              setStatus('✅ 生成完成', 'ok');
+            } else {
+              setStatus('任务完成但未找到视频产物', 'err');
+            }
+            return;
+          }
+          if (d.status === 'FAILED') { setStatus('生成失败：' + (d.message || '未知错误'), 'err'); return; }
+          setStatus(`生成中…（已等待 ${(i + 1) * 5}s）`);
+        } catch (e) {
+          setStatus('轮询失败：' + e.message, 'err');
+          return;
+        }
+      }
+      setStatus('超时：超过 5 分钟未完成，请重试', 'err');
+    }
+  </script>
+</body>
+</html>
